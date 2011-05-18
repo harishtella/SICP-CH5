@@ -13,11 +13,8 @@
 ;;; To find this stack code below, look for comments with **
 
 
-(define (make-machine register-names ops controller-text)
+(define (make-machine ops controller-text)
   (let ((machine (make-new-machine)))
-    (for-each (lambda (register-name)
-                ((machine 'allocate-register) register-name))
-              register-names)
     ((machine 'install-operations) ops)    
     ((machine 'install-instruction-sequence)
      (assemble controller-text machine))
@@ -123,18 +120,24 @@
 		(map (lambda (reg) (cons (car reg)
 								 (get-contents (cadr reg))))
 			 register-table))
+
+	  ; EX 5.13	
       (define (allocate-register name)
         (if (assoc name register-table)
             (error "Multiply defined register: " name)
             (set! register-table
                   (cons (list name (make-register name))
                         register-table)))
-        'register-allocated)
-      (define (lookup-register name)
+		; return the newly created register 
+        (cadr (assoc name register-table)))
+
+	  ; EX 5.13
+      (define (lookup/create-register name)
         (let ((val (assoc name register-table)))
           (if val
               (cadr val)
-              (error "Unknown register:" name))))
+			  (allocate-register name))))
+
       (define (execute)
         (let ((insts (get-contents pc)))
           (if (null? insts)
@@ -149,7 +152,7 @@
               ((eq? message 'install-instruction-sequence)
                (lambda (seq) (set! the-instruction-sequence seq)))
               ((eq? message 'allocate-register) allocate-register)
-              ((eq? message 'get-register) lookup-register)
+              ((eq? message 'get-register) lookup/create-register)
               ((eq? message 'install-operations)
                (lambda (ops) (set! the-ops (append the-ops ops))))
               ((eq? message 'stack) stack)
@@ -293,7 +296,6 @@
 (define (test-condition test-instruction)
   (cdr test-instruction))
 
-
 (define (make-branch inst machine labels flag pc)
   (let ((dest (branch-dest inst)))
     (if (label-exp? dest)
@@ -371,6 +373,7 @@
          (let ((r (get-register machine
                                 (register-exp-reg exp))))
            (lambda () (get-contents r))))
+
         (else
          (error "Unknown expression type -- ASSEMBLE" exp))))
 
