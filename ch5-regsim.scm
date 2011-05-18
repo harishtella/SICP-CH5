@@ -105,6 +105,7 @@
 (define (make-new-machine)
   (let ((pc (make-register 'pc))
         (flag (make-register 'flag))
+		(trace-status (make-register 'trace-status))
         (stack (make-stack))
         (the-instruction-sequence '()))
     (let ((the-ops
@@ -113,9 +114,16 @@
                  ;;**next for monitored stack (as in section 5.2.4)
                  ;;  -- comment out if not wanted
                  (list 'print-stack-statistics
-                       (lambda () (stack 'print-statistics)))))
+                       (lambda () (stack 'print-statistics)))
+
+				 ; EX 5.16
+				 (list 'tron (lambda () 
+							   (set-contents! trace-status true)))
+				 (list 'troff (lambda () 
+							   (set-contents! trace-status false)))))
           (register-table
-           (list (list 'pc pc) (list 'flag flag))))
+           (list (list 'pc pc) (list 'flag flag) 
+				 (list 'trace-status trace-status))))
 	  (define (dump-registers) 
 		(map (lambda (reg) (cons (car reg)
 								 (get-contents (cadr reg))))
@@ -138,15 +146,22 @@
               (cadr val)
 			  (allocate-register name))))
 
+	  (define (print-instruction-text inst)
+		(display (instruction-text inst))
+		(display "\n"))
+
       (define (execute)
         (let ((insts (get-contents pc)))
           (if (null? insts)
               'done
               (begin
+				(if (get-contents trace-status)
+				  (print-instruction-text (car insts)))
                 ((instruction-execution-proc (car insts)))
                 (execute)))))
       (define (dispatch message)
         (cond ((eq? message 'start)
+			   (set-contents! trace-status false)
                (set-contents! pc the-instruction-sequence)
                (execute))
               ((eq? message 'install-instruction-sequence)
@@ -465,4 +480,23 @@
 	   (perform (op print-stack-statistics))
 	   (perform (op print) (const "\n"))
 	   (goto (label start)))))
+
+
+; for testing EX 5.16 
+(define gcd-machine 
+  (make-machine 
+   (list (list 'rem remainder) (list '= =)) 
+   '((perform (op tron))
+	 test-b 
+	 (test (op =) (reg b) (const 0)) 
+	 (branch (label gcd-done)) 
+	 (assign t (op rem) (reg a) (reg b)) 
+	 (assign a (reg b)) 
+	 (assign b (reg t)) 
+	 (goto (label test-b)) 
+	 gcd-done))) 
+
+(set-register-contents! gcd-machine 'a 15)
+(set-register-contents! gcd-machine 'b 10)
+;(start gcd-machine)
 
