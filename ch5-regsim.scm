@@ -147,7 +147,20 @@
 			  (allocate-register name))))
 
 	  (define (print-instruction-text inst)
-		(display (instruction-text inst))
+		(if (labeled-instruction? inst)
+		  (begin
+			(map print-label (labeled-instruction-labels inst))
+			(display (labeled-instruction-text inst))
+			(display "\n"))
+		  (begin
+			(display (instruction-text inst))
+			(display "\n"))))
+
+
+	  (define (print-label lbl)
+		(display "*** ")
+		(display lbl)
+		(display " ***")
 		(display "\n"))
 
       (define (execute)
@@ -210,13 +223,49 @@
 			 ; I could check if next-inst 
 			 ; in already in labels and if so trigger 
 			 ; an error
-			 (receive insts
-					  (cons (make-label-entry next-inst
-											  insts)
-							labels))
+			 
+			 (let ((marked-insts 
+					 (mark-last-instruction-with-label insts next-inst)))
+			   (receive 
+				 marked-insts
+				 (cons (make-label-entry next-inst
+										 marked-insts)
+					   labels)))
 			 (receive (cons (make-instruction next-inst)
 							insts)
 					  labels)))))))
+
+; EX 5.17 stuff 
+(define (mark-last-instruction-with-label insts label-name)
+  (if (null? insts)
+	'()
+	(let ((last-inst (car insts))
+		  (rest-of-insts (cdr insts)))
+	  (cons
+		(add-label-to-inst last-inst label-name)
+		rest-of-insts))))
+
+(define (add-label-to-inst inst label-name)
+  (if (labeled-instruction? inst)
+	; adding an other label to an already labeled instruction
+	(make-instruction
+	  (list (cons 'label
+				  (append (labeled-instruction-labels inst) 
+						  (list label-name))) 
+			(labeled-instruction-text inst)))
+	; turn into labeled instruction
+	(make-instruction
+	  (list (list 'label label-name) 
+			(instruction-text inst)))))
+
+(define (labeled-instruction? inst)
+  (pair? (car (instruction-text inst))))
+
+(define (labeled-instruction-labels inst)
+  (cdr (car (instruction-text inst))))
+
+(define (labeled-instruction-text inst)
+  (cadr (instruction-text inst)))
 
 (define (update-insts! insts labels machine)
   (let ((pc (get-register machine 'pc))
@@ -225,12 +274,15 @@
         (ops (machine 'operations)))
     (for-each
      (lambda (inst)
-       (set-instruction-execution-proc! 
-        inst
-        (make-execution-procedure
-         (instruction-text inst) labels machine
-         pc flag stack ops)))
-     insts)))
+	   (let ((inst-tx (if (labeled-instruction? inst)
+						(labeled-instruction-text inst)
+						(instruction-text inst))))
+		 (set-instruction-execution-proc! 
+		   inst
+		   (make-execution-procedure
+			 inst-tx labels machine
+			 pc flag stack ops))))
+	 insts)))
 
 (define (make-instruction text)
   (cons text '()))
@@ -272,7 +324,6 @@
          (make-perform inst machine labels ops pc))
         (else (error "Unknown instruction type -- ASSEMBLE"
                      inst))))
-
 
 (define (make-assign inst machine labels operations pc)
   (let ((target
@@ -441,7 +492,7 @@
 
 
 
-
+#|
 
 ; EX 5.14 
 ; number of stack pushes and max stack size is 
@@ -481,6 +532,7 @@
 	   (perform (op print) (const "\n"))
 	   (goto (label start)))))
 
+|#
 
 ; for testing EX 5.16 
 (define gcd-machine 
@@ -498,5 +550,5 @@
 
 (set-register-contents! gcd-machine 'a 15)
 (set-register-contents! gcd-machine 'b 10)
-;(start gcd-machine)
+(start gcd-machine)
 
