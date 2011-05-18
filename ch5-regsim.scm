@@ -119,6 +119,10 @@
                        (lambda () (stack 'print-statistics)))))
           (register-table
            (list (list 'pc pc) (list 'flag flag))))
+	  (define (dump-registers) 
+		(map (lambda (reg) (cons (car reg)
+								 (get-contents (cadr reg))))
+			 register-table))
       (define (allocate-register name)
         (if (assoc name register-table)
             (error "Multiply defined register: " name)
@@ -150,6 +154,7 @@
                (lambda (ops) (set! the-ops (append the-ops ops))))
               ((eq? message 'stack) stack)
               ((eq? message 'operations) the-ops)
+			  ((eq? message 'dump-registers) dump-registers)
               (else (error "Unknown request -- MACHINE" message))))
       dispatch)))
 
@@ -167,6 +172,9 @@
 (define (get-register machine reg-name)
   ((machine 'get-register) reg-name))
 
+(define (dump-registers machine)
+  ((machine 'dump-registers)))
+
 (define (assemble controller-text machine)
   (extract-labels controller-text
     (lambda (insts labels)
@@ -180,13 +188,17 @@
        (lambda (insts labels)
          (let ((next-inst (car text)))
            (if (symbol? next-inst)
-               (receive insts
-                        (cons (make-label-entry next-inst
-                                                insts)
-                              labels))
-               (receive (cons (make-instruction next-inst)
-                              insts)
-                        labels)))))))
+			 ; EX 5.8 
+			 ; I could check if next-inst 
+			 ; in already in labels and if so trigger 
+			 ; an error
+			 (receive insts
+					  (cons (make-label-entry next-inst
+											  insts)
+							labels))
+			 (receive (cons (make-instruction next-inst)
+							insts)
+					  labels)))))))
 
 (define (update-insts! insts labels machine)
   (let ((pc (get-register machine 'pc))
@@ -379,6 +391,9 @@
   (let ((op (lookup-prim (operation-exp-op exp) operations))
         (aprocs
          (map (lambda (e)
+				; EX 5.9 
+				; would add a check here to make sure 
+				; e is not a label
                 (make-primitive-exp e machine labels))
               (operation-exp-operands exp))))
     (lambda ()
