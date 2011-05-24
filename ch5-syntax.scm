@@ -136,7 +136,7 @@
 (define (cond-get-clauses exp) (cdr exp))
 (define (cond-first-clause-test exp) (caar exp))
 (define (cond-first-clause-exps exp) (cons 'begin (cdar exp)))
-(define (cond-else-clause? exp) (eq? exp 'else))
+(define (cond-else-clause-2? exp) (eq? exp 'else))
 (define (cond-rest-clauses exp) (cdr exp))
 
 

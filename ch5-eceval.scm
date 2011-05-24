@@ -67,7 +67,7 @@
    (list 'cond-get-clauses cond-get-clauses)
    (list 'cond-first-clause-test cond-first-clause-test)
    (list 'cond-first-clause-exps cond-first-clause-exps)
-   (list 'cond-else-clause? cond-else-clause?)
+   (list 'cond-else-clause-2? cond-else-clause-2?)
    (list 'cond-rest-clauses cond-rest-clauses)
    
    ;;operations in eceval-support.scm
@@ -172,7 +172,7 @@ cond-handle-clause
 	(assign continue (label cond-after-test))
 	(assign exp (op cond-first-clause-test) (reg exp))
 	; check if else clause
-	(test (op cond-else-clause?) (reg exp))
+	(test (op cond-else-clause-2?) (reg exp))
 	(branch (label cond-else-clause))
 	(goto (label eval-dispatch))
 cond-after-test
