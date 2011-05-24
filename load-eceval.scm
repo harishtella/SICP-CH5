@@ -10,3 +10,8 @@
 (load "ch5-eceval-support.scm")		;simulation of machine operations
 
 (load "ch5-eceval.scm")			;eceval itself
+
+
+;; start the eceval repl right away
+(define the-global-environment (setup-environment))
+(start eceval)

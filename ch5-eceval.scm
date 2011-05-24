@@ -56,6 +56,11 @@
    (list 'no-operands? no-operands?)
    (list 'first-operand first-operand)
    (list 'rest-operands rest-operands)
+   ; EX 5.23
+   (list 'cond? cond?)
+   (list 'cond->if cond->if)
+   (list 'let? let?)
+   (list 'let->combination let->combination)
 
    ;;operations in eceval-support.scm
    (list 'true? true?)
@@ -133,9 +138,25 @@ eval-dispatch
   (branch (label ev-lambda))
   (test (op begin?) (reg exp))
   (branch (label ev-begin))
+
+  ; EX 5.23 
+  (test (op cond?) (reg exp))
+  (branch (label ev-cond))
+  (test (op let?) (reg exp))
+  (branch (label ev-let))
+
   (test (op application?) (reg exp))
   (branch (label ev-application))
   (goto (label unknown-expression-type))
+
+
+; EX 5.23
+ev-cond
+  (assign exp (op cond->if) (reg exp))
+  (goto (label eval-dispatch))
+ev-let
+  (assign exp (op let->combination) (reg exp))
+  (goto (label eval-dispatch))
 
 ev-self-eval
   (assign val (reg exp))

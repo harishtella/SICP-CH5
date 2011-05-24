@@ -118,3 +118,18 @@
                      (sequence->exp (cond-actions first))
                      (expand-clauses rest))))))
 ;; end of Cond support
+
+;EX 5.23
+(define (let? exp) (tagged-list? exp 'let))
+(define (let-body exp) (cddr exp))
+(define (let-vars exp) (map car (cadr exp)))
+(define (let-args exp) (map cadr (cadr exp)))
+(define (make-application fn args)
+  (cons fn args))
+(define (let->combination exp)
+  (make-application
+	(make-lambda (let-vars exp) (let-body exp))
+	(let-args exp)))
+
+
+
