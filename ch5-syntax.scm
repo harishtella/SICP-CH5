@@ -131,5 +131,15 @@
 	(make-lambda (let-vars exp) (let-body exp))
 	(let-args exp)))
 
+; EX 5.24
+(define (cond-prim? exp) (tagged-list? exp 'cond-prim))
+(define (cond-get-clauses exp) (cdr exp))
+(define (cond-first-clause-test exp) (caar exp))
+(define (cond-first-clause-exps exp) (cons 'begin (cdar exp)))
+(define (cond-else-clause? exp) (eq? exp 'else))
+(define (cond-rest-clauses exp) (cdr exp))
+
+
+
 
 

@@ -26,6 +26,7 @@
   (list
    ;;primitive Scheme operations
    (list 'read read)
+   (list 'null? null?)
 
    ;;operations in syntax.scm
    (list 'self-evaluating? self-evaluating?)
@@ -61,7 +62,14 @@
    (list 'cond->if cond->if)
    (list 'let? let?)
    (list 'let->combination let->combination)
-
+   ; EX 5.24
+   (list 'cond-prim? cond-prim?)
+   (list 'cond-get-clauses cond-get-clauses)
+   (list 'cond-first-clause-test cond-first-clause-test)
+   (list 'cond-first-clause-exps cond-first-clause-exps)
+   (list 'cond-else-clause? cond-else-clause?)
+   (list 'cond-rest-clauses cond-rest-clauses)
+   
    ;;operations in eceval-support.scm
    (list 'true? true?)
    (list 'make-procedure make-procedure)
@@ -138,16 +146,56 @@ eval-dispatch
   (branch (label ev-lambda))
   (test (op begin?) (reg exp))
   (branch (label ev-begin))
-
   ; EX 5.23 
   (test (op cond?) (reg exp))
   (branch (label ev-cond))
   (test (op let?) (reg exp))
   (branch (label ev-let))
-
+  ; EX 5.24
+  (test (op cond-prim?) (reg exp))
+  (branch (label ev-cond-prim))
   (test (op application?) (reg exp))
   (branch (label ev-application))
   (goto (label unknown-expression-type))
+
+
+; EX 5.24
+ev-cond-prim
+	(assign exp (op cond-get-clauses) (reg exp))
+cond-handle-clause
+	; check if we are out of clauses 
+	(test (op null?) (reg exp))
+	(branch (label cond-no-clauses-left))
+	(save exp)
+	(save env)
+	(save continue)
+	(assign continue (label cond-after-test))
+	(assign exp (op cond-first-clause-test) (reg exp))
+	; check if else clause
+	(test (op cond-else-clause?) (reg exp))
+	(branch (label cond-else-clause))
+	(goto (label eval-dispatch))
+cond-after-test
+	(restore continue)
+	(restore env)
+	(restore exp)
+	(test (op true?) (reg val))
+	(branch (label cond-test-true))
+	(assign exp (op cond-rest-clauses) (reg exp))
+	(goto (label cond-handle-clause))
+cond-else-clause
+	(restore continue)
+	(restore env)
+	(restore exp)
+	(assign exp (op cond-first-clause-exps) (reg exp))
+	(goto (label eval-dispatch))
+cond-test-true
+	(assign exp (op cond-first-clause-exps) (reg exp))
+	(goto (label eval-dispatch))
+cond-no-clauses-left
+	(assign val (const false))
+	(goto (reg continue))
+	
 
 
 ; EX 5.23
